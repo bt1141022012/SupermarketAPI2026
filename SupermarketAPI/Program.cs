@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using SupermarketAPI.Endpoints;
 using SupermarketAPI.Models;
 using SupermarketAPI.Services.Products;
@@ -43,9 +44,28 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddDbContext<SupermarketDbContext>(
-    o => o.UseSqlServer(builder.Configuration.GetConnectionString("SupermarketDbConnection"))
-);
+builder.Services.AddDbContext<SupermarketDbContext>(options =>
+{
+    var password = builder.Configuration["MSSQL_SA_PASSWORD"];
+    if (string.IsNullOrWhiteSpace(password))
+    {
+        if (builder.Environment.IsEnvironment("Testing"))
+        {
+            return;
+        }
+
+        throw new InvalidOperationException("Configure MSSQL_SA_PASSWORD before starting the API.");
+    }
+
+    var connectionString = builder.Configuration.GetConnectionString("SupermarketDbConnection")
+        ?? throw new InvalidOperationException("Connection string 'SupermarketDbConnection' is not configured.");
+    var connectionStringBuilder = new SqlConnectionStringBuilder(connectionString)
+    {
+        Password = password
+    };
+
+    options.UseSqlServer(connectionStringBuilder.ConnectionString);
+});
 
 builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
@@ -82,6 +102,15 @@ options => {
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<SupermarketDbContext>();
+    if (dbContext.Database.IsRelational())
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -97,3 +126,5 @@ app.UseAuthorization();
 app.UseEndpoints();
 
 app.Run();
+
+public partial class Program { }

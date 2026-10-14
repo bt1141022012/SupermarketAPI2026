@@ -61,6 +61,7 @@ namespace SupermarketAPI.Services.Products
 
             entity.ProductName = product.ProductName;
             entity.ProductPrice = product.ProductPrice;
+            entity.ProductStatus = product.ProductStatus;
             entity.UserId = product.UserId;
 
             _db.Products.Update(entity);

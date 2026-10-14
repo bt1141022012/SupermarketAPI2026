@@ -20,6 +20,19 @@ namespace SupermarketAPI.Endpoints
                 Description = "Muestra una lista de todas las marcas."
             }).RequireAuthorization();
 
+            group.MapGet("/paginated", async (IBrandServices brandServices, int pageNumber = 1, int pageSize = 10) =>
+            {
+                if (pageNumber < 1 || pageSize < 1)
+                    return Results.BadRequest();
+
+                var brands = await brandServices.GetBrandsPaginated(pageNumber, pageSize);
+                return Results.Ok(brands);
+            }).WithOpenApi(o => new OpenApiOperation(o)
+            {
+                Summary = "Obtener marcas paginadas",
+                Description = "Devuelve una página de marcas junto con los metadatos de paginación."
+            }).RequireAuthorization();
+
             group.MapGet("/{id}", async (int id, IBrandServices brandServices) =>
             {
                 var brand = await brandServices.GetBrand(id);

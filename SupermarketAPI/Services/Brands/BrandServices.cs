@@ -38,11 +38,46 @@ namespace SupermarketAPI.Services.Brands
             return _mapper.Map<List<Brand>, List<BrandResponse>>(brands);
         }
 
+        public async Task<PaginationDTO<BrandResponse>> GetBrandsPaginated(int pageNumber, int pageSize)
+        {
+            if (pageNumber < 1)
+                throw new ArgumentOutOfRangeException(nameof(pageNumber), "La página debe ser mayor que cero.");
+
+            if (pageSize < 1)
+                throw new ArgumentOutOfRangeException(nameof(pageSize), "El tamaño de página debe ser mayor que cero.");
+
+            var totalCount = await _db.Brands.CountAsync();
+            var brands = await _db.Brands
+                .OrderBy(brand => brand.BrandId)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return new PaginationDTO<BrandResponse>
+            {
+                Items = _mapper.Map<List<Brand>, List<BrandResponse>>(brands),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
+        }
+
         public async Task<int> PostBrand(BrandRequest brand)
         {
             var entity = _mapper.Map<BrandRequest, Brand>(brand);
             await _db.Brands.AddAsync(entity);
             await _db.SaveChangesAsync();
+           // return 0;
+            return entity.BrandId;
+        }
+
+         public async Task<int> CrearMarca(BrandRequest brand)
+        {
+            var entity = _mapper.Map<BrandRequest, Brand>(brand);
+            await _db.Brands.AddAsync(entity);
+            await _db.SaveChangesAsync();
+           // return 0;
             return entity.BrandId;
         }
 

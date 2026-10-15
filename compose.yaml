@@ -1,4 +1,19 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: supermarket-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__SupermarketDbConnection: "Server=sqlserver,1433;Database=SupermarketDb;User Id=sa;TrustServerCertificate=True"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: supermarket-sqlserver

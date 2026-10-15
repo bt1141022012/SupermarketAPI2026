@@ -10,6 +10,8 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
     ports:
       - "127.0.0.1:8080:8080"
+    networks:
+      - supermarket-network
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -23,6 +25,8 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
     ports:
       - "127.0.0.1:1433:1433"
+    networks:
+      - supermarket-network
     volumes:
       - supermarket-sqlserver-data:/var/opt/mssql
     healthcheck:
@@ -36,3 +40,8 @@ services:
 
 volumes:
   supermarket-sqlserver-data:
+
+networks:
+  supermarket-network:
+    name: supermarket-network
+    driver: bridge

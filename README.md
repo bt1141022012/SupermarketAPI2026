@@ -2,14 +2,14 @@
 
 ## SQL Server local
 
-Configure a local SQL Server password before starting the database:
+Compose starts SQL Server with the local default password `Supermarket2026!Local`.
+To override it, copy the example environment file and change `MSSQL_SA_PASSWORD`:
 
 ```sh
 cp .env.example .env
 ```
 
-Set `MSSQL_SA_PASSWORD` in `.env` to a strong password, then build and start
-the API and SQL Server together:
+Then build and start the API and SQL Server together:
 
 ```sh
 docker compose up --build -d --wait

@@ -46,7 +46,15 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddDbContext<SupermarketDbContext>(options =>
 {
+    var connectionString = builder.Configuration.GetConnectionString("SupermarketDbConnection")
+        ?? throw new InvalidOperationException("Connection string 'SupermarketDbConnection' is not configured.");
+    var connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
     var password = builder.Configuration["MSSQL_SA_PASSWORD"];
+    if (string.IsNullOrWhiteSpace(password))
+    {
+        password = connectionStringBuilder.Password;
+    }
+
     if (string.IsNullOrWhiteSpace(password))
     {
         if (builder.Environment.IsEnvironment("Testing"))
@@ -57,12 +65,7 @@ builder.Services.AddDbContext<SupermarketDbContext>(options =>
         throw new InvalidOperationException("Configure MSSQL_SA_PASSWORD before starting the API.");
     }
 
-    var connectionString = builder.Configuration.GetConnectionString("SupermarketDbConnection")
-        ?? throw new InvalidOperationException("Connection string 'SupermarketDbConnection' is not configured.");
-    var connectionStringBuilder = new SqlConnectionStringBuilder(connectionString)
-    {
-        Password = password
-    };
+    connectionStringBuilder.Password = password;
 
     options.UseSqlServer(connectionStringBuilder.ConnectionString);
 });
@@ -107,6 +110,23 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<SupermarketDbContext>();
     if (dbContext.Database.IsRelational())
     {
+        var masterConnectionString = new SqlConnectionStringBuilder(
+            dbContext.Database.GetDbConnection().ConnectionString)
+        {
+            InitialCatalog = "master"
+        };
+
+        await using (var connection = new SqlConnection(masterConnectionString.ConnectionString))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "IF DB_ID(@databaseName) IS NULL BEGIN DECLARE @createDatabaseSql nvarchar(258); SET @createDatabaseSql = N'CREATE DATABASE ' + QUOTENAME(@databaseName); EXEC(@createDatabaseSql); END;";
+            command.Parameters.AddWithValue(
+                "@databaseName",
+                new SqlConnectionStringBuilder(dbContext.Database.GetDbConnection().ConnectionString).InitialCatalog);
+            await command.ExecuteNonQueryAsync();
+        }
+
         await dbContext.Database.MigrateAsync();
     }
 }

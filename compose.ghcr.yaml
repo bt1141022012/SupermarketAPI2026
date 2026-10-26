@@ -1,0 +1,33 @@
+services:
+  api:
+    image: ghcr.io/bt1141022012/supermarket-api:latest
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__SupermarketDbConnection: "Server=localhost,1433;Database=SupermarketDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Supermarket2026!Local};TrustServerCertificate=True"
+    network_mode: "service:sqlserver"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Supermarket2026!Local}
+    ports:
+      - "127.0.0.1:11433:1433"
+      - "127.0.0.1:18080:8080"
+    volumes:
+      - supermarket-sqlserver-published-data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  supermarket-sqlserver-published-data:

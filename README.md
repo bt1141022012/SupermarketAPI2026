@@ -66,7 +66,7 @@ paquetes con ese propietario.
 4. Publica la imagen:
 
 	```sh
-	docker push "${IMAGE}:latest"
+	docker push ghcr.io/bt1141022012/supermarket-api:latest
 	```
 
 La imagen publicada estará en
